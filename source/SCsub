@@ -1,0 +1,158 @@
+#!/usr/bin/env python
+
+Import( '*' )
+
+import subprocess
+
+def req_build_build_list( mod, l ):
+    for m in mod.subs:
+        req_build_build_list( m, l );
+    
+    obj = l.get( mod, None );
+    if obj == None:
+        l[mod] = 0;
+    
+    l[mod] += 1;
+
+def build_mod_weigth_map( sorted_mods ):
+    mw = dict();
+
+    for i in sorted_mods:
+        if i[1] not in mw:
+            mw[i[1]] = list();
+        mw[i[1]] += [i[0]];
+    
+    return mw;
+
+def is_mod_depend( mod, dep ):
+    if mod == dep:
+        return True;
+
+    for m in mod.subs:
+        is_mod_depend( m, dep );
+    
+    return False;
+
+def build_map( sorted_mods ):
+    ret = list();
+
+    for i in sorted_mods:
+        if sorted_mods[i].__len__() == 1:
+            ret += sorted_mods[i];
+            continue;
+        
+        while sorted_mods[i].__len__() != 0:
+            for mod in sorted_mods[i]:
+                sm = [x for i,x in enumerate(sorted_mods[i]) if x!=mod];
+                
+                if sm.__len__() == 0:
+                    ret += [mod];
+                    sorted_mods[i].clear();
+                    break;
+                
+                passed = True;
+
+                for m in sm:
+                    if is_mod_depend( mod, m ):
+                        passed = False;
+                        break;
+                
+                if passed:
+                    ret += [mod];
+                    sorted_mods[i].remove( mod );
+
+    return ret;
+
+# Function just for simplify debug of modules tree
+def req_print_build_tree( cm, level = "" ):
+    for i in cm.subs:
+        print( level + i.info["name"] );
+
+        if ( i.info["name"] != "core" ):
+            req_print_build_tree( i, level + "      " );
+
+def build_prepare( mod ):
+    mod.prepare_src( env, env["BUILD_PLATFORM_DIR"] + "/__prep__/" )
+
+def build( mod ):
+    mod.compile_src( env, env["BUILD_PLATFORM_DIR"] + "/__bin__/", patch_source );
+
+    build_rules = mod.info["build_rules"];
+    build_type_name = build_rules.name;
+
+    assert build_type_name != "shared_library", "Engine cannot dependence shared_library!";
+
+    if build_type_name == "library":
+        mod.build( env, env["BUILD_PLATFORM_DIR"] + "/libs/" );
+    
+    elif build_type_name == "program":
+        mod.build( env, env["BUILD_PLATFORM_DIR"] + "/bin/" );
+
+        # Install executables in binary folders
+        env.Install( env["BIN_DIR"], mod.bin );
+
+def patch_source( filepath ):
+    #proc = subprocess.Popen( ["../macros/macros", filepath, "-n"], stdout = subprocess.PIPE, stderr = subprocess.STDOUT );
+    #stdout, stderr = proc.communicate();
+            
+    #result = stdout.decode( "utf-8" );
+    #lines = result.splitlines();
+    #lines.insert( 1, engine_static_defines );
+
+    #result = "";
+    #for line in lines:
+    #    result = result + line + "\n";
+
+    #f = open( filepath, 'w' );
+    #f.write( result );
+    #f.close();
+    pass
+
+
+def shared_build( mods ):
+    for _mod in mods:
+        mod = mods[_mod];
+
+        build_rules = mod.info["build_rules"];
+        build_type_name = build_rules.name;
+
+        if build_type_name == "shared_library":
+            mod.prepare_src( env, env["BUILD_PLATFORM_DIR"] );
+            mod.build( env, env["BUILD_PLATFORM_DIR"] + "/bin/" );
+
+            env.Install( env["LIB_DIR"], mod.bin );
+
+# Programs use raw build, then do not depend engine
+SConscript( "programs/SCsub" );
+
+env.Append( DFLAGS = "-I=" + env["BUILD_PLATFORM_DIR"] + "/__prep__/source/breach/" );
+
+# Modules dict for build targets
+env.modules = dict();
+
+# Process engine modules declarations
+folders = env.get_modules_folders( "breach" );
+env.process_modules_declarations( folders );
+mods = env.generate_modules_build_data();
+
+mod_list = dict();
+mod = mods.get( "breach", None );
+if mod is None:
+    mod = mods["exec"];
+
+assert( mod != None );
+
+req_build_build_list( mod, mod_list );
+mod_list[mod] = 0; # Fast fix for application
+
+mod_list_sorted_s1 = sorted( mod_list.items(), key=lambda x: x[1], reverse=True );
+mod_list_sorted_s2 = build_mod_weigth_map( mod_list_sorted_s1 );
+mod_list_sorted_s3 = build_map( mod_list_sorted_s2 );
+
+for m in mod_list_sorted_s3:
+    build_prepare( m );
+
+for m in mod_list_sorted_s3:
+    build( m );
+
+#shared_build( mods );

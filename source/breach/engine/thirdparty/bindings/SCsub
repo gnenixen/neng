@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+Import( '*' )
+
+class CModule:
+    def mod_src( self ):
+        files = [];
+        
+        if env['OS'] == "Linux":
+            files = env.get_source_files( custom_folders = [
+                "glx",
+                "linux"
+            ] );
+        elif env["OS"] == "Windows":
+            ifolders = [ "glx", "linux", "bin" ];
+            files = env.get_source_files( ignore_folders = [
+                "glx",
+                "linux",
+                "bin"
+            ] );
+
+        return files;
+    
+    def mod_cfg( self ):
+        return {
+            'preprocess': False
+        };
+
+    def mod_build( self ):
+        return env.CLibraryBR();
+
+    def mod_sub( self ):
+        return [
+           "spine",
+           "gravity",
+           # "mruby"
+        ];
+
+env.reg_module( "bindigns", CModule() );

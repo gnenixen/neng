@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+Import( '*' )
+
+import platform
+
+class CModule:
+    def __init__( self ):
+        self.__osDirs = {
+            "Linux": "linux",
+            "Windows": "win"
+        };
+
+    def mod_src( self ):
+        dir_name = self.__osDirs.get( platform.system(), "INVALID" );
+        assert dir_name != "INVALID", platform.system() + " unsupported, please write the handle code or inform the engine dev about this"
+
+        if dir_name == "linux":
+            env.Prepend( LIBS = ["X11", "GL", "dl"] );
+        elif dir_name == "win":
+            env.Prepend( LIBS = ["imm32"] );
+
+        return env.get_source_files( custom_folders = [dir_name] );
+
+    def mod_build( self ):
+        return env.CLibraryBR();
+
+    def mod_sub( self ):
+        return [
+            "bindigns",
+            "thirdparty",
+        ];
+
+env.reg_module( "os", CModule() );

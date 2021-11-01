@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+build/
+__pycache__
+*.exe
+*.o
+*.obj
+*.lst
+*.so
+*.a
+*.pyc
+bin/
+.build_cache/
+.vscode/

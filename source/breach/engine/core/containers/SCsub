@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+
+Import( '*' )
+
+class CModule:
+    def mod_src( self ):
+        return env.get_source_files();
+
+    def mod_build( self ):
+        return env.CLibraryBR();
+
+    def mod_sub( self ):
+        return ["core_mem"];
+
+env.reg_module( "core_containers", CModule() );

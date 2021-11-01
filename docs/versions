@@ -1,0 +1,21 @@
+                                    CORE LEVEL
+[__MEM_CONTROL_HARD]
+In given mode every operation with memory will be controlled and checked before access,
+turn off in release mode please, because really slow down game, use only for debug
+proposes.
+
+[__MEM_CONTROL_RAW]
+Ok, its your life, no checks, no control, just return true on every Memory.isValid call,
+excepts if Memory.isValid( null ). I will NEVER use this version, just mind it:)
+
+                                    ENGINE LEVEL
+[ENGINE_RELEASE]
+
+[ENGINE_DEBUG]
+__MEM_CONTROL_HARD
+
+                                    GAME LEVEL
+[GAME_RELEASE]
+
+[GAME_DEBUG]
+__MEM_CONTROL_HARD
